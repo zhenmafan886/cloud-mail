@@ -35,6 +35,10 @@
           <Icon icon="fluent:settings-48-regular" width="20" height="20" />
           <span class="menu-name" style="margin-left: 16px">{{$t('settings')}}</span>
         </el-menu-item>
+        <el-menu-item @click="openHelp" index="help">
+          <Icon icon="fluent:question-circle-20-regular" width="20" height="20" />
+          <span class="menu-name" style="margin-left: 16px">帮助</span>
+        </el-menu-item>
         <div class="manage-title" v-perm="['all-email:query','user:query','role:query','setting:query','analysis:query','reg-key:query']">
           <div>{{$t('manage')}}</div>
         </div>
@@ -84,6 +88,7 @@ import {useUiStore} from "@/store/ui.js";
 const settingStore = useSettingStore();
 const uiStore = useUiStore();
 const route = useRoute();
+
 const logoUrl = `${import.meta.env.BASE_URL}mail.png`
 const titleUsesDisplayFont = computed(() => !/\p{Script=Han}/u.test(settingStore.settings.title || ''))
 
@@ -91,10 +96,12 @@ function openCompose() {
   uiStore.writerRef.open()
 }
 
+function openHelp() {
+  window.open(`${import.meta.env.BASE_URL}help.html`, '_blank')
+}
 </script>
 
 <style lang="scss" scoped>
-
 @font-face {
   font-family: "BAHAMASB";
   src: url("/fonts/BAHAMASB.woff") format("woff");
@@ -124,14 +131,12 @@ function openCompose() {
     text-overflow: ellipsis;
     max-width: calc(240px - 20px - 32px - 5px);
   }
-
   .logo {
     width: 36px;
     height: 36px;
     flex-shrink: 0;
     object-fit: contain;
   }
-
   .user-right-icon {
     align-self: center;
     position: absolute;
@@ -139,7 +144,6 @@ function openCompose() {
     right: 8px;
     color: #ffffff;
   }
-
 }
 
 .title.title-display {
@@ -166,11 +170,9 @@ function openCompose() {
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
-
   &:hover {
     background: #1064c0;
   }
-
   @media (max-width: 767px) {
     display: none;
   }
@@ -205,7 +207,6 @@ function openCompose() {
   user-select: none;
 }
 
-
 :deep(.el-scrollbar__wrap--hidden-default ) {
   background: var(--aside-backgound) !important;
 }
@@ -229,6 +230,5 @@ function openCompose() {
 }
 
 .scroll {
-
 }
 </style>
