@@ -108,10 +108,12 @@
     <tr><td>Email Routing</td><td>catch-all 全收</td><td>指向 Worker <code>cloud-mail</code>，状态活跃</td></tr>
   </table>
 
-  <div class="card warn">
-    <strong>注意</strong>
-    <p>Worker 的环境变量和绑定是在 Cloudflare 控制台手动配置的，<strong>没有写进仓库的 wrangler.toml</strong>。
-    因此重新从 GitHub 部署时，绑定会保留；但如果删除 Worker 重建，需要重新添加一遍。</p>
+  <div class="card ok">
+    <strong>绑定已写入配置文件，不会再丢</strong>
+    <p><code>db</code> / <code>kv</code> / <code>r2</code> 三条绑定已声明在仓库的
+    <code>mail-worker/wrangler.toml</code> 中，跟着代码一起部署。以后推送代码触发重新构建，绑定会自动保留。</p>
+    <p>环境变量（<code>domain</code> / <code>admin</code> / <code>jwt_secret</code>）仍然只放在 Cloudflare 控制台，
+    依靠配置里的 <code>keep_vars = true</code> 保护，部署时不会被清空。</p>
   </div>
 
   <h2>3. 环境变量</h2>
@@ -191,6 +193,8 @@
     <li>Cloudflare 会自动检测到 push 并重新构建部署。</li>
     <li>如果构建失败，Cloudflare 会保留上一个成功版本，站点不会中断。</li>
   </ol>
+  <p class="muted">注意：本仓库对侧边栏菜单做过定制（新增「帮助」入口），Sync fork 时如果菜单文件冲突，
+  需要保留本地改动，只合并上游其他更新。</p>
 
   <h2>7. 常见故障排查</h2>
 
@@ -198,6 +202,8 @@
   <ul>
     <li>最常见原因：<code>domain</code> 变量格式不对，检查是否为 <code>["111911.xyz"]</code>。</li>
     <li>其次检查 D1、KV、R2 三个绑定是否齐全，缺任何一个接口都会报错。</li>
+    <li>如果接口返回「KV数据库未绑定」，说明绑定表被人重置了，去 Worker 设置 → 绑定 里核对是否为 5 项：
+    <code>ai</code>、<code>assets</code>、<code>db</code>、<code>forward</code>、<code>kv</code>、<code>r2</code>。</li>
   </ul>
 
   <h3>能收信但不能发信</h3>
@@ -243,7 +249,10 @@
     <li><span class="tag r">坑</span>初始 <code>admin</code> 填了未注册的 <code>admin@111911.xyz</code>，导致登录后没有管理菜单，改成实际注册的邮箱才生效。</li>
     <li><span class="tag">坑</span>Resend 域名页的 DKIM 值在浏览器里显示为省略号，没法直接复制，最后通过 Resend API 取到完整值才配对。</li>
     <li><span class="tag">坑</span>先只绑了 <code>forward</code> 没绑 <code>email</code>，站外发信会报「未配置发信服务」。</li>
-    <li><span class="tag g">经验</span>仓库 wrangler.toml 里的 db/kv/r2 绑定是注释状态，实际是在控制台手动加的。</li>
+    <li><span class="tag r">最坑</span>最初绑定是在控制台手动加的，而仓库 wrangler.toml 里 db/kv/r2 是注释状态。
+    推送代码触发重新部署后，wrangler 按配置重置绑定，<strong>db/kv/r2 全部丢失</strong>，站点卡在启动动画，
+    接口报「KV数据库未绑定」。解决办法是把三条绑定写进 wrangler.toml，已修复。</li>
+    <li><span class="tag g">经验</span>以后凡是手动在控制台加的绑定，都要同步写进 wrangler.toml，否则下次部署会被覆盖。</li>
   </ol>
 
   <p class="muted" style="margin-top:48px">本文档随代码部署，修改内容需要编辑仓库 <code>mail-vue/public/help.html</code> 后提交，Cloudflare 会自动重新构建。</p>
