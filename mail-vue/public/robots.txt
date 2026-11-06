@@ -1,0 +1,11 @@
+# Sand Mail 维护手册所在站点，禁止搜索引擎抓取整站。
+# 这是一个私人邮箱服务，不提供对外内容，无需被收录。
+User-agent: *
+Disallow: /
+
+# 部分爬虫单独声明（可选，冗余但更稳妥）
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
