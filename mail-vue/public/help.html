@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
 <title>Sand Mail 维护手册</title>
 <style>
   :root { color-scheme: light dark; }
@@ -91,7 +92,7 @@
     <tr><td>站点地址</td><td><code>https://mail.111911.xyz</code>（备用 <code>https://cloud-mail.chinamkp9364.workers.dev</code>）</td></tr>
     <tr><td>管理员账号</td><td><code>sand@111911.xyz</code></td></tr>
     <tr><td>Cloudflare 账号</td><td><code>chinamkp@gmail.com</code></td></tr>
-    <tr><td>Account ID</td><td><code>69a622bff3f29be505c42c1752b8d87d</code></td></tr>
+    <tr><td>Account ID</td><td><code>见 Cloudflare 控制台 → 帐户主页（本文档不再记录明文）</code></td></tr>
     <tr><td>代码仓库</td><td><code>github.com/zhenmafan886/cloud-mail</code>（fork 自 maillab/cloud-mail）</td></tr>
     <tr><td>Resend 账号</td><td>用 Google 账号登录，域名 111911.xyz 已验证</td></tr>
   </table>
@@ -122,7 +123,7 @@
     <tr><th style="width:22%">变量名</th><th>值</th><th style="width:26%">说明</th></tr>
     <tr><td><code>domain</code></td><td><code>["111911.xyz"]</code></td><td>必须是 JSON 数组字符串，不是纯文本域名</td></tr>
     <tr><td><code>admin</code></td><td><code>sand@111911.xyz</code></td><td>管理员邮箱，决定后台管理权限</td></tr>
-    <tr><td><code>jwt_secret</code></td><td><code>c9f3a72e8b514d6fa0c2e91b7d3548ac</code></td><td>登录令牌密钥，泄露需立即更换</td></tr>
+    <tr><td><code>jwt_secret</code></td><td><code>见 Cloudflare 控制台（本文档不再记录明文）</code></td><td>登录令牌密钥，泄露需立即更换</td></tr>
   </table>
 
   <div class="card danger">
@@ -241,6 +242,7 @@
     <li>Resend API Key 存在数据库里，管理员账号可以看到，不要随意把管理员权限给别人。</li>
     <li>当前 Resend Key 是全权限，更保险的做法是在 Resend 新建一个只能发信的 Key 替换掉。</li>
     <li>开放注册前想清楚：任何人都能用 <code>@111911.xyz</code> 发信，被用来发垃圾邮件会导致整个域名被拉黑。</li>
+    <li>本文档已设置 <code>noindex</code>，不应出现在搜索引擎结果里；但页面上仍有账号名等信息，仍按内部文档对待。</li>
   </ul>
 
   <h2>10. 本次部署踩坑记录</h2>
