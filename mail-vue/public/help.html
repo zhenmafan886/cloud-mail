@@ -174,6 +174,12 @@
     如果开了橙色云朵代理，Resend 无法完成验证，发信会失败。</p>
   </div>
 
+  <div class="card ok">
+    <strong>但 mail.111911.xyz 的云朵必须保持开启</strong>
+    <p>这个自定义域指向的是 Worker，Worker 本身没有源站服务器。把它改成灰色「仅 DNS」，请求会直接发往不存在的源站，
+    整站就打不开了。橙色云朵是 Worker 自定义域能正常工作的前提条件，不能关。</p>
+  </div>
+
   <h2>6. 日常维护</h2>
 
   <h3>查看发信额度</h3>
@@ -215,6 +221,14 @@
     <li>今天是否已用满 100 封额度。</li>
   </ul>
 
+  <h3>访问时频繁出现「人机验证」</h3>
+  <ul>
+    <li>来源：Cloudflare 安全规则里的一条自定义规则触发了 JavaScript 质询。</li>
+    <li>排查位置：Cloudflare → 111911.xyz → 安全性 → 安全规则。</li>
+    <li>本项目曾有一条「拦截非法请求-放行蜘蛛」规则（境外 IP + 带 X-Forwarded-For 时触发质询），已将其禁用。</li>
+    <li>若再次出现，检查是否有人重新启用了类似规则，或「浏览器完整性检查」是否处于开启状态。</li>
+  </ul>
+
   <h3>修改后台设置提示失败</h3>
   <p>通常是 <code>admin</code> 变量与当前登录账号不一致导致没有管理权限。
   确认 <code>admin</code> 的值和你登录的邮箱完全相同。</p>
@@ -231,7 +245,7 @@
     <tr><td>KV 读取</td><td>10 万次 / 天</td></tr>
     <tr><td>D1 存储</td><td>5 GB</td></tr>
     <tr><td>D1 写入</td><td>10 万行 / 天</td></tr>
-    <tr><td>R2 存储</td><td>10 GB</td></tr>
+    <tr><td>R2 存储</td><td>10 GB（附件占这里，出网不计费）</td></tr>
     <tr><td>Resend 发信</td><td>100 封 / 天，3000 封 / 月</td></tr>
   </table>
   <p class="muted">超额后服务不会自动扩容，会直接返回错误。个人自用通常够，量大会触顶。</p>
@@ -256,6 +270,64 @@
     接口报「KV数据库未绑定」。解决办法是把三条绑定写进 wrangler.toml，已修复。</li>
     <li><span class="tag g">经验</span>以后凡是手动在控制台加的绑定，都要同步写进 wrangler.toml，否则下次部署会被覆盖。</li>
   </ol>
+
+  <h2>11. 管理员密码忘记了怎么办</h2>
+
+  <div class="card danger">
+    <strong>先明确一点：这套系统没有「忘记密码」和邮件找回功能</strong>
+    <p>仓库里没有任何 forget / reset / forgot 相关代码，登录页也没有「忘记密码」入口。
+    密码忘了，只能靠下面三条路自救。<strong>建议现在就把这一节读一遍，并提前做好文末的两条预防措施。</strong></p>
+  </div>
+
+  <h3>密码是怎么存的（理解这一点才好手工重置）</h3>
+  <p>用户表在 D1 数据库 <code>cloud-mail</code> 的 <code>user</code> 表中，密码不存明文，存的是两个字段：</p>
+  <ul>
+    <li><code>salt</code>：16 字节随机数的 Base64 字符串</li>
+    <li><code>password</code>：对「salt 字符串 + 明文密码」拼接后做 SHA-256，再 Base64 编码的结果</li>
+  </ul>
+  <pre><code>password = base64( SHA-256( salt + 明文密码 ) )</code></pre>
+  <p class="muted">所以只要同时改写 <code>salt</code> 和 <code>password</code> 两个字段，就能把密码设成任意值，不需要知道原密码。</p>
+
+  <h3>方案 A：直接在 D1 控制台改密码（最可靠，不依赖登录）</h3>
+  <p>位置：Cloudflare → Workers &amp; Pages → D1 → <code>cloud-mail</code> → Console。</p>
+  <p>把下面这条 SQL 整条粘贴执行，执行后 <code>sand@111911.xyz</code> 的密码会变成 <code>Temp123456</code>：</p>
+  <pre><code>UPDATE user
+SET salt = '6BRja3+LSy6cDQZ6xvEmMQ==',
+    password = '/WzI8sZOIxXSYIWckA8RMJ6WofatXgzCQ00fFtSbhp8='
+WHERE email = 'sand@111911.xyz';</code></pre>
+
+  <div class="card warn">
+    <strong>执行后立刻登录，第一件事就是改成自己的密码</strong>
+    <p><code>Temp123456</code> 是本文档公开写明的临时密码，只用于找回那一刻。
+    登录后马上到「个人设置」改掉，不要长期保留。</p>
+  </div>
+
+  <p class="muted">如果提示表不存在，先执行 <code>SELECT name FROM sqlite_master WHERE type='table';</code> 核对表名。
+  如果想换成别的临时密码，把 <code>salt</code> 换成任意新的 Base64 字符串，再按上面的公式重算 <code>password</code> 即可，两者必须配套。</p>
+
+  <h3>方案 B：借 admin 环境变量「换一个管理员」</h3>
+  <p>管理员身份不是写在数据库里的，而是由环境变量 <code>admin</code> 的邮箱值决定：<strong>哪个账号的邮箱与该值相同，哪个账号就是管理员</strong>。
+  所以可以绕开忘记密码的账号：</p>
+  <ol>
+    <li>用任意邮箱注册一个新账号，例如 <code>rescue@111911.xyz</code>（系统设置 → 用户注册 需为开启状态，或直接在注册页注册）。</li>
+    <li>Cloudflare → Workers → <code>cloud-mail</code> → 设置 → 变量和机密，把 <code>admin</code> 改成这个新邮箱。</li>
+    <li>保存后等待生效（或重新部署一次），新账号立刻拥有管理菜单。</li>
+    <li>进入「用户列表」，重置原来的 <code>sand@111911.xyz</code> 密码。</li>
+    <li>最后把 <code>admin</code> 改回 <code>sand@111911.xyz</code>，并删除临时账号。</li>
+  </ol>
+  <p class="muted">这个方案完全不碰数据库，但需要能正常注册新账号。注册码若为开启状态，先关掉或拿到注册码。</p>
+
+  <h3>方案 C：还有设备保持登录</h3>
+  <p>如果某个浏览器还没退出登录，直接进「个人设置」改密码；
+  若该账号有管理权限，也可以在「用户列表」里重置其他账号。但会话一旦过期就失效，窗口期很短。</p>
+
+  <div class="card ok">
+    <strong>两条预防措施，建议现在就做</strong>
+    <ul>
+      <li><strong>留一个备用管理员</strong>：多注册一个账号，需要时把 <code>admin</code> 变量切过去应急，相当于给自己留了后门。</li>
+      <li><strong>密码和上面的 SQL 存进密码管理器</strong>：这套系统没有找回通道，忘了就只剩改数据库一条路。</li>
+    </ul>
+  </div>
 
   <p class="muted" style="margin-top:48px">本文档随代码部署，修改内容需要编辑仓库 <code>mail-vue/public/help.html</code> 后提交，Cloudflare 会自动重新构建。</p>
 
